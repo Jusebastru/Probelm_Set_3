@@ -1,0 +1,763 @@
+if(!require(pacman)) install.packages("pacman") ; require(pacman)
+if(!require(janitor)) install.packages("janitor") ; require(janitor)
+if(!require(readxl)) install.packages("readxl") ; require(readxl)
+if(!require(writexl)) install.packages("writexl") ; require(writexl)
+if(!require(sf)) install.packages("sf") ; require(sf)
+if(!require(geojsonio)) install.packages("geojsonio") ; require(geojsonio)
+if(!require(GGally)) install.packages("GGally") ; require(GGally)
+if(!require(leaflet)) install.packages("leaflet") ; require(leaflet)
+
+if(!require(jsonlite)) install.packages("jsonlite") ; require(jsonlite) #No
+if(!require(rvest)) install.packages("rvest") ; require(rvest) #No
+if(!require(httr)) install.packages("httr") ; require(httr) #No
+
+library(pacman)
+library(janitor)
+library(ggplot2)
+library(ggcorrplot)
+library(leaflet)
+library(rvest) #No
+library(jsonlite) #No
+library(httr) #No
+library(purrr) #No
+
+p_load(rio, # import/export data
+       tidyverse, # tidy-data
+       glmnet, # To implement regularization algorithms. 
+       caret, # Creating predictive models
+       scatterplot3d, # For 3D visualization
+       plotly, # For interactive 3D plots
+       skimr, #sumary data
+       gridExtra, #visualizaing missing data
+       corrplot, #correlation PLots
+       stargazer, #tables/outpot to TEX
+       MASS, #Various statistcal functions
+       readxl,
+       readr,
+       writexl
+       
+)
+```
+
+# Datos de Deporte y Recreación #
+```{r}
+
+# Parques #
+
+parques_geojson <- "https://datosabiertos.bogota.gov.co/dataset/d2ad3bde-f835-4c01-a419-53902a16d1b3/resource/d1b71ea0-6e13-4f9e-aa46-fa41c496ab16/download/parques.geojson"
+
+archivo <- tempfile(fileext = ".geojson")
+
+download.file(parques_geojson, destfile = archivo, mode = "wb")
+parques <- st_read(archivo)
+
+
+# Cargando el archivo Excel de Canchas Sintéticas #
+
+Canchas <- read_excel("C:/Users/Juancho/OneDrive/Desktop/MeCA/Big Data y Maching Learning/Taller No. 3/canchasinteticas2021.xlsx")
+
+```
+
+# Datos de Transporte en Bogotá #
+```{r}
+
+# Paradero SITP #
+
+paraderos_geojson <- "https://datosabiertos.bogota.gov.co/dataset/5ba19d20-06af-4c04-b50c-8ecb9472327d/resource/624bb288-2a6d-466f-801a-93e5497cd879/download/paraderos.json"
+
+archivo2 <- tempfile(fileext = ".geojson")
+
+download.file(paraderos_geojson, destfile = archivo2, mode = "wb")
+paraderos <- st_read(archivo2)
+
+
+# Cargar .geojson de Estaciones de TM #
+
+Estaciones <- st_read("C:/Users/Juancho/OneDrive/Desktop/MeCA/Big Data y Maching Learning/Taller No. 3./Estaciones_Troncales_TM.geojson", quiet = TRUE)
+```
+
+# Datos de Salud #
+```{r }
+
+# EPS #
+
+EPS_geojson <- "https://datosabiertos.bogota.gov.co/dataset/c9cc72c9-4242-4a57-b86d-d377de88b558/resource/838967cb-47dd-4567-b41c-62d3103ecfaa/download/eps.geojson"
+
+archivo3 <- tempfile(fileext = ".geojson")
+
+download.file(paraderos_geojson, destfile = archivo3, mode = "wb")
+EPS <- st_read(archivo3)
+
+
+# Droguerías #
+
+Droguerías_geojson <- "https://datosabiertos.bogota.gov.co/dataset/bb3ebd5d-9b9b-4be6-ab42-b4ab2bd98214/resource/25bc32fc-b377-4b78-a87a-d62b7b962998/download/efar.geojson"
+
+archivo4 <- tempfile(fileext = ".geojson")
+
+download.file(paraderos_geojson, destfile = archivo4, mode = "wb")
+driguerias <- st_read(archivo4)
+
+```
+
+# Restaurantes #
+```{r}
+
+Restaurante_geojson <- "https://datosabiertos.bogota.gov.co/dataset/f0a98681-ba40-4a6b-8542-32948e02f4a2/resource/fc0a8276-f02e-4a8b-9ca9-cb4cf7da243d/download/egba.geojson"
+
+archivo5 <- tempfile(fileext = ".geojson")
+
+download.file(paraderos_geojson, destfile = archivo5, mode = "wb")
+restaurantes <- st_read(archivo5)
+
+```
+
+# Cultura "
+```{r}
+Biblioteca_geojson <- "https://datosabiertos.bogota.gov.co/dataset/0975fb88-7a10-4b1d-957a-467339905787/resource/0b82bfe3-dd45-4ac4-9fdd-7bdc2bc5e3fd/download/biblored.geojson"
+
+archivo6 <- tempfile(fileext = ".geosjon")
+
+download.file(Biblioteca_geojson, destfile = archivo6, mode = "wb")
+bibliotecas <- st_read(archivo6)
+              
+```
+
+# Educación #
+```{r}
+
+# Colegios #
+
+colegios_geojson <- "https://datosabiertos.bogota.gov.co/dataset/d451b52f-e30c-43b3-9066-3a7816638fea/resource/4ad11efe-2dac-4f5a-b984-73b9027070b3/download/colegios03_2024.geojson"
+
+archivo7 <- tempfile(fileext = ".geosjon")
+
+download.file(colegios_geojson, destfile = archivo7, mode = "wb")
+colegios <- st_read(archivo7)
+```
+
+# CAIs #
+```{r}
+
+# CAI #
+
+cai_geojson <- "https://datosabiertos.bogota.gov.co/dataset/bcc51101-762b-4e13-9455-f77502c75a0f/resource/202c5810-6880-43f8-b801-df70aaf6d237/download/comandoatencioninmediata.geojson"
+
+archivo8 <- tempfile(fileext = ".geosjon")
+
+download.file(cai_geojson, destfile = archivo8, mode = "wb")
+cai <- st_read(archivo8)
+```
+
+```{r}
+
+summary(Estaciones)
+glimpse(Estaciones)
+```
+
+```{r }
+summary(paraderos)
+glimpse(paraderos)
+```
+
+```{r}
+summary(parques)
+glimpse(parques)
+```
+
+```{r}
+summary(restaurantes)
+glimpse(restaurantes)
+```
+
+```{r }
+summary(EPS)
+glimpse(EPS)
+```
+
+```{r}
+summary(driguerias)
+glimpse(driguerias)
+```
+
+```{r}
+summary(colegios)
+glimpse(colegios)
+```
+
+```{r }
+summary(Canchas)
+glimpse(Canchas)
+```
+
+```{r}
+summary(cai)
+glimpse(cai)
+```
+
+```{r}
+glimpse(bibliotecas)
+```
+# Cargando Bases de datos Taller #
+```{r }
+submission_template <- read.csv("C:/Users/Juancho/OneDrive/Desktop/MeCA/Big Data y Maching Learning/Taller No. 3/uniandes-bdml-2025-10-ps-3/submission_template.csv", sep = ",", stringsAsFactors = TRUE)
+
+test <- read.csv("C:/Users/Juancho/OneDrive/Desktop/MeCA/Big Data y Maching Learning/Taller No. 3/uniandes-bdml-2025-10-ps-3/test.csv", sep = ",", stringsAsFactors = TRUE)
+
+train <- read.csv("C:/Users/Juancho/OneDrive/Desktop/MeCA/Big Data y Maching Learning/Taller No. 3/uniandes-bdml-2025-10-ps-3/train.csv", sep = ",", stringsAsFactors = TRUE)
+
+train$base_type <- "train"
+test$base_type <- "test"
+
+testysumission <- inner_join(test, submission_template, by = "property_id")
+ 
+BaseIntento <- full_join(train, testysumission, by = "property_id")
+ 
+Base <- bind_rows(testysumission, train)
+
+# Creando COlumna PrecioUnificado# 
+Base <- Base %>%
+  mutate(PrecioUnificado = coalesce(price,price.y))
+
+#Eliminando columnas que no interesan #
+Base <- Base %>%
+  dplyr::select(-price,-price.x,-price.y)
+
+# Creo la columna 'IVPHistorico' y según el año le asigno el valor de índice Valorización Predial (IVP)
+Base <- Base %>%
+  mutate(IVPHistorico = case_when(
+    year == 2019 ~ 1,
+    year == 2020 ~ 1.0422,
+    year == 2021 ~ 1.0336,
+    TRUE ~ NA_real_  # Para años distintos, asigna NA
+  ))
+
+# InflacionAcumulada = Deflactando precios a año base 2019. Antes creo columna de Inflación acumulada desde 2019 hasta año "t" #
+Base <- Base %>%
+  mutate(InflacionAcumulada = case_when(
+    year == 2019 ~ 1,
+    year == 2020 ~ 1 * 1.0422,
+    year == 2021 ~ 1.0422 * 1.0336,
+    TRUE ~ NA_real_
+  ))
+
+Base <- Base %>%
+  mutate(
+    PrecioBase = PrecioUnificado/InflacionAcumulada
+  )
+```
+
+# Cargando Base de UPZ en Chapinero
+```{r}
+
+UPZ_Chapinero <- st_read("C:/Users/Juancho/OneDrive/Desktop/MeCA/Big Data y Maching Learning/Taller No. 3./upz-bogota.geojson", quiet = TRUE)
+
+# Filtrar por CODIGO_UPZ
+
+upz_filtrado <- UPZ_Chapinero %>%
+  filter(codigo_upz %in% c(88, 89, 90, 97, 99))
+```
+
+```{r}
+# Convertir la base de puntos a objeto espacial con CRS compatible
+Base_sf <- Base %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326)  # Sistema WGS84
+
+# Asegurar que upz_filtrado esté en el mismo CRS
+upz_filtrado <- st_transform(upz_filtrado, crs = 4326)
+
+# Filtrar los puntos que están dentro de las UPZ filtradas
+BaseChapi <- st_join(Base_sf, upz_filtrado, join = st_within, left = FALSE)
+
+# Visualización opcional para verificar
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = upz_filtrado, fillOpacity = 0.2, color = "blue") %>%
+  addCircleMarkers(data = BaseChapi, radius = 4, color = "red", label = ~as.character(property_id))
+
+# Revisando la cantidad de NA's por variables de interés #
+summary(BaseChapi$rooms)
+summary(BaseChapi$bathrooms)
+summary(BaseChapi$bedrooms)
+summary(BaseChapi$surface_total)
+summary(BaseChapi$surface_covered)
+
+# Imputando NA en la variable "bathrooms" #
+
+moda_bathrooms_Chapi <- Base %>%
+  filter(!is.na(bathrooms)) %>%
+  count(bathrooms) %>%
+  arrange(desc(n)) %>%
+  slice(1) %>%
+  pull(bathrooms)
+
+BaseChapi1 <- BaseChapi %>%
+  mutate(bathrooms = if_else(is.na(bathrooms), moda_bathrooms_Chapi, bathrooms))
+
+ChismosoBaños1 <- BaseChapi1 %>%
+  group_by(property_type, bedrooms, bathrooms) %>%
+  summarise(
+    totalbaños = n(), .groups = "drop") %>%
+  arrange(property_type,bedrooms, bathrooms)
+
+
+# Mirando información de Surface_covered #
+
+ChismosoSurfaceCovered <- BaseChapi1 %>%                                       
+  group_by(property_type, surface_covered, bedrooms, bathrooms, rooms) %>%
+  summarise(frecuencia = n(), .groups = "drop") %>%
+  arrange(property_type, desc(frecuencia))
+  
+view(ChismosoSurfaceCovered)
+summary(ChismosoSurfaceCovered)
+
+# Paso 1: Calcular la moda de surface_covered para cada combinación
+
+moda_surface <- BaseChapi1 %>%
+  filter(!is.na(surface_covered)) %>%
+  group_by(property_type, rooms, bedrooms, bathrooms, surface_covered) %>%
+  summarise(Frecuencia = n(), .groups = "drop") %>%
+  group_by(property_type, rooms, bedrooms, bathrooms) %>%
+  slice_max(order_by = Frecuencia, n = 1, with_ties = FALSE) %>%
+  dplyr::select(-Frecuencia)
+
+# Paso 2: Unir con la base original para imputar
+
+moda_surface_sin_geom <- moda_surface %>% st_drop_geometry()
+
+BaseChapi2 <- BaseChapi1 %>%
+  dplyr::left_join(moda_surface_sin_geom, 
+            by = c("property_type", "rooms", "bedrooms", "bathrooms"),
+            suffix = c("", "_moda")) %>%
+  mutate(surface_covered = if_else(is.na(surface_covered), surface_covered_moda, surface_covered)) %>%
+  dplyr::select(-surface_covered_moda)
+
+# Paso 3: Verificación rápida
+summary(BaseChapi1$surface_covered)
+summary(BaseChapi2$surface_covered)
+
+# Imputar valores a NA en 'rooms' según el tipo de propiedad
+BaseChapi3 <- BaseChapi2 %>%
+  mutate(rooms = case_when(
+    is.na(rooms) & property_type == "Apartamento" ~ 2,
+    is.na(rooms) & property_type == "Casa"        ~ 3,
+    TRUE ~ rooms  # Mantener los valores existentes si no hay NA o no cumple condición
+  ))
+
+# Creo una columna de áreas totales sum(bathrooms, bedrooms, rooms)
+BaseChapi3 <- BaseChapi3 %>%
+  mutate(
+    AreasTotales = bathrooms + bedrooms + rooms)
+
+moda_surface_sin_geom2 <- BaseChapi3 %>%
+  filter(!is.na(surface_covered)) %>%
+  group_by(property_type, AreasTotales, surface_covered) %>%
+  summarise(Frecuencia = n(), .groups = "drop") %>%
+  group_by(property_type, AreasTotales) %>%
+  slice_max(order_by = Frecuencia, n = 1, with_ties = FALSE) %>%
+  dplyr::select(-Frecuencia)
+
+# Paso 2: Unir con la base original para imputar
+
+moda_surface_sin_geom3 <- moda_surface_sin_geom2 %>% st_drop_geometry()
+
+BaseChapi4 <- BaseChapi3 %>%
+  left_join(moda_surface_sin_geom3, 
+            by = c("property_type", "AreasTotales"),
+            suffix = c("", "_moda")) %>%
+  mutate(surface_covered = if_else(is.na(surface_covered), surface_covered_moda, surface_covered)) %>%
+  dplyr::select(-surface_covered_moda)
+
+# Paso 3: Verificación rápida
+summary(BaseChapi4$surface_covered)  # 44 NA's
+summary(BaseChapi4$AreasTotales)     #  0 NA's
+visdat::vis_miss(BaseChapi4, warn_large_data = FALSE)
+
+
+
+# Filtrar y visualizar observaciones con NA en surface_covered, se eliminan 44 observaciones #
+na_surface_covered <- BaseChapi4 %>%
+  filter(is.na(surface_covered)) %>%
+  dplyr::select(AreasTotales, bathrooms, bedrooms, rooms, property_type)
+
+
+
+# IMPUTANDO NA's de SUFARCE_TOTAL #
+
+moda_surfaceTotal_geom <- BaseChapi4 %>%
+  filter(!is.na(surface_total)) %>%
+  group_by(property_type, AreasTotales, surface_covered, surface_total) %>%
+  summarise(Frecuencia = n(), .groups = "drop") %>%
+  group_by(property_type, AreasTotales, surface_covered) %>%
+  slice_max(order_by = Frecuencia, n = 1, with_ties = FALSE) %>%
+  dplyr::select(-Frecuencia)
+
+# Paso 2: Unir con la base original para imputar
+
+moda_surface_sin_geom4 <- moda_surfaceTotal_geom %>% st_drop_geometry()
+
+BaseChapi5 <- BaseChapi4 %>%
+  left_join(moda_surface_sin_geom4, 
+            by = c("property_type", "AreasTotales", "surface_covered"),
+            suffix = c("", "_moda")) %>%
+  mutate(surface_total = if_else(is.na(surface_total), surface_total_moda, surface_total)) %>%
+  dplyr::select(-surface_total_moda)
+
+summary(BaseChapi5$surface_total) #401 NA's
+summary(BaseChapi5$surface_covered) # 44 NA's
+
+
+# Eliminando las observaciones que tienen NA's en surface_covered de Base6
+
+BaseChapi5 <- BaseChapi5 %>%
+  filter(!is.na(surface_covered))
+
+summary(BaseChapi5$surface_total) # Ahora son 398 NA's después de eliminar los 44 NA's de Surface_covered
+
+# Eliminando las observaciones que tienen NA's en surface_total de Base6
+
+BaseChapi5 <- BaseChapi5 %>%
+  filter(!is.na(surface_total))
+summary(BaseChapi5$surface_total)
+
+visdat::vis_miss(BaseChapi5, warn_large_data = FALSE)
+
+BaseChapi5 <- BaseChapi5 %>%
+  dplyr::select(
+    -title,
+    -zona_estacionamiento,
+    -decreto_pot,
+    -decreto,
+    -shape_area,
+    -shape_len,
+    -escala_captura,
+    -fecha_captura,
+    -responsable,
+    -globalid
+    )
+
+BaseChapi5 <- BaseChapi5 %>%
+  mutate(
+    preciom2 = PrecioUnificado/surface_covered,
+    fecha = paste0(year, "-", sprintf("%02d", month))
+  )
+
+```
+
+# Graficando por Tipo de propiedad #
+```{r }
+BaseChapi5 %>%
+  st_drop_geometry() %>%
+  group_by(property_type) %>%
+  summarise(PrecioBase_prom = mean(PrecioBase, na.rm = TRUE)) %>%
+  ggplot(aes(x = reorder(property_type, -PrecioBase_prom), y = PrecioBase_prom)) +
+  geom_bar(stat = "identity", fill = "darkgreen", alpha = 0.7) +
+  geom_text(aes(label = scales::comma(round(PrecioBase_prom, 0))),
+            vjust = 1.5, color = "white", size = 4) +  # Texto dentro de la barra
+  labs(title = "Precio Deflactado Promedio por Tipo de Propiedad",
+       x = "Tipo de Propiedad", y = "Precio Deflactado Promedio") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+# Graficando por Barrio vs Precio Base Promedio #
+```{r}
+BarriosVsPrecioDeflactado <- BaseChapi5 %>%
+  st_drop_geometry() %>%
+  group_by(nombre) %>%
+  summarise(PrecioBase_prom = mean(PrecioBase, na.rm = TRUE)) %>%
+  ggplot(aes(x = reorder(nombre, -PrecioBase_prom), y = PrecioBase_prom)) +
+  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8) +
+  geom_text(aes(label = scales::comma(round(PrecioBase_prom, 0))),
+            hjust = 1.1, size = 3.5, color = "black") +  # Etiquetas fuera de la barra
+  labs(title = "Precio Deflactado Promedio por UPZ de Chapinero",
+       x = "Nombre de la UPZ - Barrio", y = "Precio Deflactado Promedio") +
+  scale_y_continuous(labels = scales::comma, 
+                     breaks = seq(0, max(BaseChapi5$PrecioBase, na.rm = TRUE), by = 200000000),
+                     expand = expansion(mult = c(0, 0.1))) +
+  theme_minimal() +
+  coord_flip()
+
+plotly::ggplotly(BarriosVsPrecioDeflactado)
+```
+# Histograma Frecuencia de área construida vs Tipo de Propiedad #
+```{r}
+
+histograma <- ggplot(BaseChapi5, aes(x = surface_covered, fill = property_type)) +
+  geom_histogram(binwidth = 10, position = "identity", alpha = 0.6) +
+  facet_wrap(~ property_type, scales = "free_y") +
+  labs(title = "Distribución del Área Construida por Tipo de Propiedad",
+       x = "Área construida (m²)",
+       y = "Frecuencia") +
+  theme_minimal()
+
+plotly::ggplotly(histograma)
+```
+
+
+```{r }
+
+# Creo una Base aparte y le adicio dos columnas de interés: precio por metro cuadrado deflactado y fecha en formato fecha #
+BaseChapi5 <- BaseChapi5 %>%
+  mutate(
+    preciom2 = PrecioBase/surface_covered,
+    fecha = paste0(year, "-", sprintf("%02d", month))
+  )
+
+summary(BaseChapi5$preciom2)
+hist(BaseChapi5$preciom2)
+```
+# Revisando Outliers a 2 sd de Precio/m2 (Precio m2) #
+```{r}
+low <- round(mean(BaseChapi5$preciom2) - 2*sd(BaseChapi5$preciom2),2)
+up <- round(mean(BaseChapi5$preciom2) + 2*sd(BaseChapi5$preciom2))
+perc1 <- unname(round(quantile(BaseChapi5$preciom2, probs = c(.01)),2))
+```
+
+```{r}
+p1 <- BaseChapi5 %>%
+  ggplot(aes(y = preciom2)) +
+  geom_boxplot(fill = "darkblue", alpha = 0.4) +
+  labs(
+    title = "Conservando Outliers",
+    y = "Precio por metro cuadrado", x = "") +
+  theme_bw()
+p2 <- BaseChapi5 %>%
+  filter(between(preciom2, perc1,  up)) %>% 
+  ggplot(aes(y = preciom2)) +
+  geom_boxplot(fill = "darkblue", alpha = 0.4) +
+  labs(
+    title = "Eliminando Outliers",
+    y = "Precio por metro cuadrado", x = "") +
+  theme_bw()
+
+grid.arrange(p1, p2, ncol = 2)
+```
+# Eliminamos Outliers #
+```{r }
+
+BaseChapi6 <- BaseChapi5 %>%
+  filter(between(preciom2, perc1, up))
+```
+
+# Visualizamos la distribución de Precio/medtro cuadrado ($/m2) #
+```{r}
+# Visualicemos la distribución de nuestra variable de interés
+
+p <- ggplot(BaseChapi6, aes(x = preciom2)) +
+  geom_histogram(fill = "darkblue", alpha = 0.4) +
+  labs(x = "Valor de venta $/m2 (log-scale)", y = "Cantidad") +
+  scale_x_log10(labels = scales::dollar) +
+  theme_bw()
+
+
+ggplotly(p)
+```
+
+```{r}
+q <- ggplot(BaseInicial, aes(x = PrecioBase)) +
+  geom_histogram(fill = "darkblue", alpha = 0.4) +
+  labs(x = "Valor de venta Precio Deflactado (log-scale)", y = "Cantidad") +
+  scale_x_log10(labels = scales::dollar) +
+  theme_bw()
+
+
+ggplotly(q)
+```
+
+```{r }
+skimr::skim(BaseChapi6 %>%
+              dplyr::select(preciom2, PrecioBase, rooms, bathrooms, bedrooms, property_type))
+```
+
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Imputando con Método del Vecino más Cercano
+# ---------------------------------------------------------------------------------------------------------------
+```{r}
+
+# Imputando NA en la variable "bathrooms" #
+
+install.packages("VIM")
+library(VIM)
+
+view(Base)
+str(Base)
+summary(Base$bathrooms)
+
+# Seleccionar variables relevantes para imputar Bathrooms
+
+Imputar_Bath <- Base %>%
+  dplyr::select(bedrooms, bathrooms, property_type, rooms, lat, lon, surface_covered, surface_total)
+
+# Imputar con MVMC
+imputadosRooms_knn <- kNN(Imputar_Bath, variable = "bathrooms", k = 5)
+
+# Sustituyendo la columna imputada en la base original
+
+Base$bathrooms <- imputados_knn$bathrooms
+
+
+# Imputando Rooms 
+imputadosRooms_knn <- kNN(Imputar_Bath, variable = "rooms", k = 5)
+Base$rooms <- imputadosRooms_knn$rooms
+
+# Imputado Surface_covered
+imputadosSurfaceCovered_knn <- kNN(Imputar_Bath, variable = "surface_covered", k = 5)
+Base$surface_covered <- imputadosSurfaceCovered_knn$surface_covered
+
+# Imputando Surface_total
+imputadosSurfaceTotal_knn <- kNN(Imputar_Bath, variable = "surface_total", k = 5)
+Base$surface_total <- imputadosSurfaceTotal_knn$surface_total
+
+# Corro línea 592 view(Bae) #
+
+```
+
+```{r}
+# Convertir la base de puntos a objeto espacial con CRS compatible
+Base_sf <- Base %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326)  # Sistema WGS84
+
+# Asegurar que upz_filtrado esté en el mismo CRS
+upz_filtrado <- st_transform(upz_filtrado, crs = 4326)
+
+# Filtrar los puntos que están dentro de las UPZ filtradas
+BaseChapiMVMC <- st_join(Base_sf, upz_filtrado, join = st_within, left = FALSE)
+
+visdat::vis_miss(BaseChapiMVMC, warn_large_data = FALSE)
+```
+
+# Grafica de precio Deflactado Promedio vs Tipo Propiedad #
+```{r }
+BaseChapiMVMC %>%
+  st_drop_geometry() %>%
+  group_by(property_type) %>%
+  summarise(PrecioBase_prom = mean(PrecioBase, na.rm = TRUE)) %>%
+  ggplot(aes(x = reorder(property_type, -PrecioBase_prom), y = PrecioBase_prom)) +
+  geom_bar(stat = "identity", fill = "darkgreen", alpha = 0.7) +
+  geom_text(aes(label = scales::comma(round(PrecioBase_prom, 0))),
+            vjust = 1.5, color = "white", size = 4) +  # Texto dentro de la barra
+  labs(title = "Precio Deflactado Promedio por Tipo de Propiedad (MVMC)",
+       x = "Tipo de Propiedad", y = "Precio Deflactado Promedio") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal()
+```
+
+# Graficando por Barrio vs Precio Base Promedio #
+```{r}
+BarriosVsPrecioDeflactadoMVMC <- BaseChapiMVMC %>%
+  st_drop_geometry() %>%
+  group_by(nombre) %>%
+  summarise(PrecioBase_prom = mean(PrecioBase, na.rm = TRUE)) %>%
+  ggplot(aes(x = reorder(nombre, -PrecioBase_prom), y = PrecioBase_prom)) +
+  geom_bar(stat = "identity", fill = "steelblue", alpha = 0.8) +
+  geom_text(aes(label = scales::comma(round(PrecioBase_prom, 0))),
+            hjust = 1.1, size = 3.5, color = "black") +  # Etiquetas fuera de la barra
+  labs(title = "Precio Deflactado Promedio por UPZ de Chapinero (MVMC)",
+       x = "Nombre de la UPZ - Barrio", y = "Precio Deflactado Promedio") +
+  scale_y_continuous(labels = scales::comma, 
+                     breaks = seq(0, max(BaseChapi5$PrecioBase, na.rm = TRUE), by = 200000000),
+                     expand = expansion(mult = c(0, 0.1))) +
+  theme_minimal() +
+  coord_flip()
+
+plotly::ggplotly(BarriosVsPrecioDeflactadoMVMC)
+plotly::ggplotly(BarriosVsPrecioDeflactado)
+
+grid.arrange(BarriosVsPrecioDeflactado, BarriosVsPrecioDeflactadoMVMC, nrow(2))
+```
+# Histograma Frecuencia de área construida vs Tipo de Propiedad #
+```{r}
+
+
+histogramaMVMC <- ggplot(BaseChapiMVMC, aes(x = surface_covered, fill = property_type)) +
+  geom_histogram(binwidth = 10, position = "identity", alpha = 0.6) +
+  facet_wrap(~ property_type, scales = "free_y") +
+  labs(title = "Distribución del Área Construida por Tipo de Propiedad (MVMC)",
+       x = "Área construida (m²)",
+       y = "Frecuencia") +
+  theme_minimal()
+
+plotly::ggplotly(histogramaMVMC)
+
+
+```
+
+
+```{r }
+view(BaseChapiMVMC)
+
+# Creo una Base aparte y le adicio dos columnas de interés: precio por metro cuadrado deflactado y fecha en formato fecha #
+BaseChapiMVMC <- BaseChapiMVMC %>%
+  mutate(
+    preciom2 = PrecioBase/surface_covered,
+    fecha = paste0(year, "-", sprintf("%02d", month))
+  )
+    
+    
+summary(BaseChapiMVMC$preciom2)
+
+hist(BaseChapiMVMC$preciom2)
+
+grid.arrange(hist(BaseChapiMVMC$preciom2), hist(BaseChapi5$preciom2))
+```
+
+# Revisando Outliers a 2 sd de Precio/m2 (Precio m2) #
+```{r}
+low_MVMC <- round(mean(BaseChapiMVMC$preciom2) - 2*sd(BaseChapiMVMC$preciom2),2)
+up_MVMC <- round(mean(BaseChapiMVMC$preciom2) + 2*sd(BaseChapiMVMC$preciom2))
+perc1_MVMC <- unname(round(quantile(BaseChapiMVMC$preciom2, probs = c(.01)),2))
+```
+
+```{r}
+p1_MVMC <- BaseChapiMVMC %>%
+  ggplot(aes(y = preciom2)) +
+  geom_boxplot(fill = "darkblue", alpha = 0.4) +
+  labs(
+    title = "Conservando Outliers (MVMC)",
+    y = "Precio por metro cuadrado", x = "") +
+  theme_bw()
+p2_MVMC <- BaseChapiMVMC %>%
+  filter(between(preciom2, perc1,  up)) %>% 
+  ggplot(aes(y = preciom2)) +
+  geom_boxplot(fill = "darkblue", alpha = 0.4) +
+  labs(
+    title = "Eliminando Outliers (MVMC)",
+    y = "Precio por metro cuadrado", x = "") +
+  theme_bw()
+
+grid.arrange(p1_MVMC, p2_MVMC, ncol = 2)
+```
+
+# Eliminamos Outliers #
+```{r }
+
+BaseChapiMVMC_2 <- BaseChapiMVMC %>%
+  filter(between(preciom2, perc1, up))
+```
+
+# Visualizamos la distribución de Precio/medtro cuadrado ($/m2) #
+```{r}
+# Visualicemos la distribución de nuestra variable de interés
+
+p_BaseChapiMVMC_2 <- ggplot(BaseChapiMVMC_2, aes(x = preciom2)) +
+  geom_histogram(fill = "darkblue", alpha = 0.4) +
+  labs(x = "Valor de venta $/m2 (BaseChapiMVMC_2) (log-scale)", y = "Cantidad") +
+  scale_x_log10(labels = scales::dollar) +
+  theme_bw()
+
+
+ggplotly(p_BaseChapiMVMC_2)
+```
+
+```{r}
+q_BaseChapiMVMC_2 <- ggplot(BaseChapiMVMC_2, aes(x = PrecioBase)) +
+  geom_histogram(fill = "darkblue", alpha = 0.4) +
+  labs(x = "Valor de venta Precio Deflactado (log-scale)", y = "Cantidad") +
+  scale_x_log10(labels = scales::dollar) +
+  theme_bw()
+
+
+ggplotly(q_BaseChapiMVMC_2)
+```
